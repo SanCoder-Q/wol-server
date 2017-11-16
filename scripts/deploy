@@ -1,0 +1,4 @@
+#!/bin/bash -ex
+
+scp -r src package.json server:~/wol-server
+ssh server 'npm install --prefix ~/wol-server'
