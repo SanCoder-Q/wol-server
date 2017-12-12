@@ -1,6 +1,8 @@
 import log from './util/log'
 import express from 'express'
 import bodyParser from 'body-parser'
+import url from 'url'
+import fs from 'fs'
 
 const server = require('http').createServer(),
       app = express();
@@ -32,7 +34,7 @@ app.post('/status', function (req, res) {
     wolStatus = defaultWolStatus;
   }, 300 * 1000);
   res.send(`Status update to ${wolStatus} successfully.`)
-})
+});
 
 app.get('/', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
@@ -42,7 +44,22 @@ app.get('/', (req, res) => {
 app.use(express.static('public'));
 
 app.get('*', (req, res) => {
-  res.status(400).send(`Bad Request`);
+  let path = url.parse(req.url).pathname;
+  let pattern = /\/log\/[^.~]+\.log/;
+  if (pattern.test(path)) {
+    let stream = fs.createReadStream('/var' + path);
+    stream.on('data', function(data) {
+      res.write(data);
+    });
+    stream.on('end', function() {
+      res.end();
+    });
+    stream.on('error', function() {
+      res.status(400).send(`Bad Request`);
+    });
+  } else {
+    res.status(400).send(`Bad Request`);
+  }
 });
 
 server.on("request", app);
